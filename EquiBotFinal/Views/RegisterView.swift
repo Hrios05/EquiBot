@@ -41,6 +41,7 @@ struct RegisterView: View {
                 .font(Font.custom("Poppins-SemiBold", size: 45))
                 .fontWeight(.bold)
                 .padding(.bottom, 25)
+                .padding(.top,40)
                 .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
 
             Group {
@@ -48,45 +49,45 @@ struct RegisterView: View {
                     TextField("First Name", text: $firstName)
                         .textFieldStyle(CustomTextFieldStyle())
                         .font(.subheadline)
-                        .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                        .foregroundColor(Color(.black))
                     
                     TextField("Last Name", text: $lastName)
                         .textFieldStyle(CustomTextFieldStyle())
                         .font(.subheadline)
-                        .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                        .foregroundColor(Color(.black))
                 }
 
                 TextField("Email", text: $email)
                     .textFieldStyle(CustomTextFieldStyle())
                     .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .foregroundColor(Color(.black))
                     .padding(.bottom, 25)
 
                 TextField("Country", text: $country)
                     .textFieldStyle(CustomTextFieldStyle())
                     .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .foregroundColor(Color(.black))
 
                 TextField("State", text: $state)
                     .textFieldStyle(CustomTextFieldStyle())
                     .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .foregroundColor(Color(.black))
 
                 TextField("City", text: $city)
                     .textFieldStyle(CustomTextFieldStyle())
-                    .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .font(.subheadline).foregroundColor(Color(.black))
+                    
                     .padding(.bottom, 25)
 
                 SecureField("Password", text: $password)
                     .textFieldStyle(CustomTextFieldStyle())
                     .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .foregroundColor(Color(.black))
 
                 SecureField("Confirm Password", text: $confirmPassword)
                     .textFieldStyle(CustomTextFieldStyle())
                     .font(.subheadline)
-                    .foregroundColor(Color(red: 39/255.0, green: 39/255.0, blue: 39/255.0))
+                    .foregroundColor(Color(.black))
             }
             .padding(.horizontal, 20)
 
@@ -108,7 +109,6 @@ struct RegisterView: View {
                 AuthController.shared.createUser(user: user) { result in
                     switch result {
                     case .success:
-                        // Handle success (e.g., navigate to another view)
                         break
                     case .failure(let error):
                         errorMessage = error.localizedDescription
@@ -124,6 +124,10 @@ struct RegisterView: View {
                     .cornerRadius(10)
             }
             .padding(.top, 20)
+            Text("Already have an account?").font(                  Font.custom("Poppins-SemiBold", size: 15))
+                .position(x:155, y:30)
+            Text("Login").font(                  Font.custom("Poppins-SemiBold", size: 15)).fontWeight(.bold)
+                .position(x:280, y:-8).foregroundColor(.init(red: 0.1569, green:0.5765, blue: 0.6275)).padding(.bottom, 40)
         }
         .padding()
     }
