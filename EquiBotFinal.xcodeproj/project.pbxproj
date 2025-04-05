@@ -99,7 +99,6 @@
 			isa = PBXGroup;
 			children = (
 				8C0B93112DA0CB09004763F3 /* Products */,
-				8C58834A2DA0D9DE00A15C60 /* GoogleService-Info.plist */,
 				8C0B93122DA0CB09004763F3 /* EquiBotFinal */,
 			);
 			sourceTree = "<group>";
@@ -107,6 +106,7 @@
 		8C0B93112DA0CB09004763F3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				8C58834A2DA0D9DE00A15C60 /* GoogleService-Info.plist */,
 				8C0B93102DA0CB09004763F3 /* EquiBotFinal.app */,
 			);
 			name = Products;
