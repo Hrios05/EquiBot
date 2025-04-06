@@ -52,8 +52,6 @@ struct HomePageView: View {
                         .padding(.leading, -70)
                     }
 
-                   
-
                     // Messages
                     ScrollViewReader { scrollViewProxy in
                         ScrollView {
@@ -139,7 +137,7 @@ struct HomePageView: View {
     func sendMessage() {
         guard !message.isEmpty else { return }
         messages.append(ChatMessage(content: message, isUser: true))
-        getChatbotResponse(for: message) { response in
+        getChatbotResponse(for: message, address: "Your Address Here") { response in
             DispatchQueue.main.async {
                 messages.append(ChatMessage(content: response, isUser: false))
             }
@@ -149,14 +147,14 @@ struct HomePageView: View {
 
     // MARK: - Get Chatbot Response
 
-    func getChatbotResponse(for userMessage: String, completion: @escaping (String) -> Void) {
+    func getChatbotResponse(for userMessage: String, address: String, completion: @escaping (String) -> Void) {
         guard let url = URL(string: "http://127.0.0.1:5000/chatbot") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: Any] = ["message": userMessage]
+        let body: [String: Any] = ["message": userMessage, "address": address]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -250,7 +248,6 @@ struct AnimatedTypingTextView: View {
         }
     }
 }
-
 #Preview {
     HomePageView(user: nil)
 }
