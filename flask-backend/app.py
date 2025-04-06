@@ -10,6 +10,7 @@ def handle_user_query(user_input):
     prompt = f"""You are a helpful legal chatbot assisting users from underrepresented communities in understanding their rights.
 
     User query: "{user_input}"
+   
     Include disclamer at the end of response.
     Provide a brief, concise answer with key points related to the user's potential legal rights and finding help or a community depending social identity. If relevant, suggest specific resources or organizations where the user can learn more or seek further help.
     Start with an understanding and empathetic statement, acknowledge the user's situation.
