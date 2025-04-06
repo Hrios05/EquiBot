@@ -13,9 +13,11 @@ struct ContentView: View {
             ZStack{
                 Image("Logo").resizable()
                     .imageScale(.large).frame(width: 512, height: 512)
-                    .padding(.leading, 43)
+                    .padding(.leading, 41)
                     .foregroundStyle(.tint)
-                Text("EquiBot").font(Font.custom("Poppins-SemiBold", size: 50)).fontWeight(.bold).position(x:282,y:510)
+                    .padding(.bottom, 50)
+                Text("EquiBot").font(Font.custom("Poppins-SemiBold", size: 50)).fontWeight(.bold).position(x:276,y:510)
+                Text("Navigating CA Law, Made Easy.").font(Font.custom("Poppins-regular", size: 16)).fontWeight(.bold).position(x:280,y:700)
             }
         }
     }

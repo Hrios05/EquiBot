@@ -1,24 +1,15 @@
 import SwiftUI
+import Firebase
+import FirebaseFirestore
 
 struct HomePageView: View {
-
-    struct TypingTextView: View {
-        let text: String
-        let onNameClick: (String, String) -> Void
-
-        var body: some View {
-            Text(text)
-                .onTapGesture {
-                    onNameClick("ExampleName", "ExampleWebsite")
-                }
-        }
-    }
-
     let user: User?
     @State private var message = ""
     @State private var messages: [ChatMessage] = []
     @State private var errorMessage: String?
     @State private var contentHeight: CGFloat = 0
+    @State private var scrollViewProxyValue: ScrollViewProxy? = nil
+    @State private var savedWebsites: [String] = []
 
     var body: some View {
         NavigationView {
@@ -26,7 +17,7 @@ struct HomePageView: View {
                 VStack {
                     // Header
                     HStack {
-                        NavigationLink(destination: TabsView(user: user, messages: messages)) {
+                        NavigationLink(destination: TabsView(user: user, messages: messages, savedWebsites: $savedWebsites)) {
                             Image("align")
                                 .resizable()
                                 .frame(width: 30, height: 30)
@@ -68,13 +59,16 @@ struct HomePageView: View {
                                 }
                             )
                             .padding()
-                            .onChange(of: messages) { _, newMessages in
-                                if let lastMessage = newMessages.last {
-                                    scrollViewProxy.scrollTo(lastMessage.id, anchor: .bottom)
-                                }
-                            }
                         }
                         .frame(height: geometry.size.height * 0.75)
+                        .onChange(of: messages) { _ , newMessages in
+                            if let lastMessage = newMessages.last {
+                                scrollViewProxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            }
+                        }
+                        .onAppear {
+                            scrollViewProxyValue = scrollViewProxy
+                        }
                     }
 
                     // Text Input + Send Button
@@ -105,6 +99,16 @@ struct HomePageView: View {
                 }
             }
         }
+        .onAppear {
+            if messages.isEmpty {
+                // Introduce EquiBot
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // Delay to allow the UI to render
+                    let initialMessage = "Hi, I'm EquiBot! Navigating CA Law, Made Easy!"
+                    messages.append(ChatMessage(content: initialMessage, isUser: false))
+                    saveMessageToFirebase(message: initialMessage, isUser: false)
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -112,7 +116,7 @@ struct HomePageView: View {
         if msg.isUser {
             HStack {
                 Spacer()
-                AnimatedTypingTextView(text: msg.content, onNameClick: saveNameAndWebsite)
+                AnimatedTypingTextView(text: msg.content, onNameClick: saveNameAndWebsite, onAnimationComplete: scrollToBottom, onCharacterTyped: scrollToBottom)
                     .font(.custom("Poppins-Regular", size: 16))
                     .padding(8)
                     .background(Color.gray.opacity(0.2))
@@ -124,8 +128,7 @@ struct HomePageView: View {
             .id(msg.id)
         } else {
             HStack {
-                AnimatedTypingTextView(text: msg.content, onNameClick: saveNameAndWebsite)
-                    .font(.custom("Poppins-SemiBold", size: 14))
+                AnimatedFormattedText(text: msg.content, onNameClick: saveNameAndWebsite, onCharacterTyped: scrollToBottom)
                     .padding()
                     .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: .leading)
                 Spacer()
@@ -137,9 +140,12 @@ struct HomePageView: View {
     func sendMessage() {
         guard !message.isEmpty else { return }
         messages.append(ChatMessage(content: message, isUser: true))
+        saveMessageToFirebase(message: message, isUser: true)
+
         getChatbotResponse(for: message, address: "Your Address Here") { response in
             DispatchQueue.main.async {
                 messages.append(ChatMessage(content: response, isUser: false))
+                saveMessageToFirebase(message: response, isUser: false)
             }
         }
         message = ""
@@ -187,7 +193,8 @@ struct HomePageView: View {
                 DispatchQueue.main.async {
                     self.errorMessage = nil
                 }
-                completion(response)
+                let formattedResponse = formatLinks(response: response)
+                completion(formattedResponse)
             } else {
                 DispatchQueue.main.async {
                     self.errorMessage = "Invalid data format received from server"
@@ -197,7 +204,6 @@ struct HomePageView: View {
         }.resume()
     }
 
-    // MARK: - Save Name + Website
 
     func saveNameAndWebsite(name: String, website: String) {
         guard let userId = user?.id else { return }
@@ -210,11 +216,63 @@ struct HomePageView: View {
             }
         }
     }
+
+    // MARK: - Firebase Integration
+
+    func saveMessageToFirebase(message: String, isUser: Bool) {
+        guard let userId = user?.id else { return }
+        let db = Firestore.firestore()
+        let chatMessage = ["content": message, "isUser": isUser, "timestamp": Timestamp(date: Date())] as [String : Any]
+
+        db.collection("users").document(userId).collection("messages").addDocument(data: chatMessage) { error in
+            if let error = error {
+                print("Error saving message to Firebase: \(error.localizedDescription)")
+            } else {
+                print("Message saved to Firebase successfully")
+            }
+        }
+    }
+
+    // MARK: - Link Formatting
+
+    func formatLinks(response: String) -> String {
+        let linkRegex = try! NSRegularExpression(pattern: "\\[([^\\]]+)\\]|\\((https?://[^\\s]+)\\)", options: [])
+        let matches = linkRegex.matches(in: response, options: [], range: NSRange(location: 0, length: response.utf16.count))
+
+        var formattedResponse = response
+
+        for match in matches.reversed() {
+            if let nameRange = Range(match.range(at: 1), in: response) {
+                // Extract the name if it's a name match
+                let name = String(response[nameRange])
+                formattedResponse = formattedResponse.replacingCharacters(in: nameRange, with: name)
+            }
+            if let urlRange = Range(match.range(at: 2), in: response), let url = URL(string: String(response[urlRange])) {
+                // Extract the URL if it's a URL match
+                let urlString = String(response[urlRange])
+                formattedResponse = formattedResponse.replacingCharacters(in: urlRange, with: urlString)
+                savedWebsites.append(urlString)
+            }
+        }
+
+        return formattedResponse
+    }
+
+    func scrollToBottom() {
+        guard let lastMessage = messages.last else { return }
+        DispatchQueue.main.async {
+            withAnimation {
+                scrollViewProxyValue?.scrollTo(lastMessage.id, anchor: .bottom)
+            }
+        }
+    }
 }
 
 struct AnimatedTypingTextView: View {
     let text: String
     let onNameClick: (String, String) -> Void
+    let onAnimationComplete: () -> Void
+    let onCharacterTyped: () -> Void
     @State private var displayedText = ""
     @State private var timer: Timer?
 
@@ -242,9 +300,99 @@ struct AnimatedTypingTextView: View {
             if index < text.count {
                 displayedText.append(text[text.index(text.startIndex, offsetBy: index)])
                 index += 1
+                onCharacterTyped()
+            } else {
+                timer?.invalidate()
+                onAnimationComplete()
+            }
+        }
+    }
+}
+
+struct AnimatedFormattedText: View {
+    let text: String
+    let onNameClick: (String, String) -> Void
+    let onCharacterTyped: () -> Void
+    @State private var displayedText = ""
+    @State private var timer: Timer?
+
+    var body: some View {
+        FormattedText(text: displayedText, onNameClick: onNameClick)
+            .onAppear {
+                startTyping()
+            }
+            .onDisappear {
+                timer?.invalidate()
+            }
+    }
+
+    private func startTyping() {
+        displayedText = ""
+        timer?.invalidate()
+        var index = 0
+        timer = Timer.scheduledTimer(withTimeInterval: 0.005, repeats: true) { _ in // Adjusted interval for faster typing
+            if index < text.count {
+                displayedText.append(text[text.index(text.startIndex, offsetBy: index)])
+                index += 1
+                onCharacterTyped()
             } else {
                 timer?.invalidate()
             }
+        }
+    }
+}
+
+struct FormattedText: View {
+    let text: String
+    let onNameClick: (String, String) -> Void
+
+    var body: some View {
+        Text(addTapGestureToLinks(text: text, onNameClick: onNameClick))
+    }
+
+    private func addTapGestureToLinks(text: String, onNameClick: @escaping (String, String) -> Void) -> AttributedString {
+        var attributedString = AttributedString(text)
+        let linkRegex = try! NSRegularExpression(pattern: "\\[([^\\]]+)\\]|\\((https?://[^\\s]+)\\)", options: [])
+        let matches = linkRegex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+
+        for match in matches.reversed() {
+            // Extract the name if it's a name match
+            if let nameRange = Range(match.range(at: 1), in: text) {
+                let name = String(text[nameRange])
+                attributedString.replaceSubrange(Range<AttributedString.Index>(nameRange, in: attributedString)!, with: AttributedString(name))
+            }
+            // Extract the URL if it's a URL match
+            if let urlRange = Range(match.range(at: 2), in: text), let url = URL(string: String(text[urlRange])) {
+                let urlString = String(text[urlRange])
+                var urlAttributedString = AttributedString(urlString)
+                urlAttributedString.link = url
+                attributedString.replaceSubrange(Range<AttributedString.Index>(urlRange, in: attributedString)!, with: urlAttributedString)
+                if let range = urlAttributedString.range(of: urlString) {
+                    attributedString[range].underlineStyle = .single
+                    attributedString[range].foregroundColor = .blue
+                }
+            }
+        }
+        return attributedString
+    }
+}
+
+extension AttributedString {
+    mutating func bold(substring: String) {
+        if let range = self.range(of: substring) {
+            self[range].font = .boldSystemFont(ofSize: UIFont.systemFontSize)
+        }
+    }
+
+    mutating func color(substring: String, to color: Color) {
+        if let range = self.range(of: substring) {
+            self[range].foregroundColor = color
+        }
+    }
+
+    mutating func underline(substring: String) {
+        if let range = self.range(of: substring) {
+            self[range].underlineStyle = .single
         }
     }
 }

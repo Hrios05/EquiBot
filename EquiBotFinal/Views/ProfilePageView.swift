@@ -1,60 +1,73 @@
-//
-//  ProfilePageView.swift
-//  EquiBotFinal
-//
-//  Created by Hector Rios on 4/5/25.
-//
-
-
 import SwiftUI
-
 
 struct ProfilePageView: View {
     let user: User?
-    @State private var message = ""
-    @State private var messages: [ChatMessage] = []
-    @State private var errorMessage: String?
-    @State private var contentHeight: CGFloat = 0
+    @State private var firstName = ""
+    @State private var lastName = ""
+    @State private var email = ""
+    @State private var country = ""
+    @State private var state = ""
+    @State private var city = ""
+    
     var body: some View {
-        
-        NavigationView {
+        VStack {
+            Spacer()
+            // user profile image
+            Image("userProfile")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .clipShape(Circle()).padding(.top, 35).padding(.leading, -8)
             
-            VStack {
-                // Header
-                HStack {
-                    NavigationLink(destination: TabsView(user: user, messages: messages)) {
-                        Image("align")
-                            .resizable()
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.leading, 30)
-                    
-                    Spacer()
-                    
-                    Image("Logo")
-                        .resizable()
-                        .frame(width: 100, height: 100)
-                        .padding(.leading, -48)
-                    
-                    Spacer()
-                    
-                    NavigationLink(destination: ProfilePageView(user: user)) {
-                        Image("userProfile")
-                            .resizable()
-                            .frame(width: 35, height: 40)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.leading, -70)
-                }
-                
+            
+            // Name and last name
+            HStack {
+                Text("Name: ") .font(.custom("Poppins-Regular", size: 16))
+                    .bold()
+                Text(user?.firstName ?? "N/A") .font(.custom("Poppins-Regular", size: 16))
+                Text(user?.lastName ?? "N/A") .font(.custom("Poppins-Regular", size: 16))
+            }
+            .padding(.top, 0)
+            
+            // Email
+            HStack {
+                Text("Email: ") .font(.custom("Poppins-Regular", size: 16))
+                    .bold()
+                Text(user?.email ?? "N/A") .font(.custom("Poppins-Regular", size: 16))
+            }
+            .padding(.top, 5)
+            
+            // Addresses (Country, State, City)
+            VStack(alignment: .center) {
+                Text("Address:") .font(.custom("Poppins-Regular", size: 16))
+                    .bold()
+                    .padding(.bottom, 2)
+                Text("Country: \(user?.country ?? "N/A")") .font(.custom("Poppins-Regular", size: 16))
+                Text("State: \(user?.state ?? "N/A")") .font(.custom("Poppins-Regular", size: 16))
+                Text("City: \(user?.city ?? "N/A")") .font(.custom("Poppins-Regular", size: 16))
+            }
+            .padding(.top, 5)
+            .multilineTextAlignment(.center)
+            
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .onAppear {
+            // Populate state variables if user is available
+            if let user = user {
+                firstName = user.firstName
+                lastName = user.lastName
+                email = user.email
+                country = user.country
+                state = user.state
+                city = user.city
             }
         }
     }
 }
-    
 
-
-        #Preview {
-            ProfilePageView(user: nil)
-        }
+#Preview {
+    ProfilePageView(user: User(id: UUID(), firstName: "John", lastName: "Doe", email: "john.doe@example.com", country: "USA", state: "CA", city: "Los Angeles", password: "password"))
+}
