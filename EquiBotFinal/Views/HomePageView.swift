@@ -74,8 +74,17 @@ struct HomePageView: View {
                     // Text Input + Send Button
                     HStack {
                         TextField("Enter your message", text: $message)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding()
+                            .background(Color(.systemGray6))
+                            .foregroundColor(.black)
+                            .font(.body)
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                            .frame(height: 50)
+                            .padding(.horizontal)
 
                         Button(action: sendMessage) {
                             Text("Send")
@@ -86,7 +95,7 @@ struct HomePageView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(20)
                         }
-                        .padding()
+                        .padding(.trailing)
                     }
 
                     // Error Message
