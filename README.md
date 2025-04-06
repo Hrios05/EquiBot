@@ -3,6 +3,8 @@
 ## Overview
 
 EquiBotFinal is an iOS application designed to simplify navigating California law. It provides a user-friendly interface for interacting with a chatbot that can answer legal questions and provide relevant information. The app integrates with Firebase for user authentication and data storage, and uses a local Python server to process chatbot requests.
+<img width="205" alt="Screenshot 2025-04-06 at 4 43 50 AM" src="https://github.com/user-attachments/assets/90753387-77f8-41d1-8ea8-702579601b6c" />
+
 
 ## Features
 
@@ -19,6 +21,7 @@ EquiBotFinal is an iOS application designed to simplify navigating California la
 -   **Firebase:** For user authentication and data storage (Firestore).
 -   **Python (Flask):** For the backend chatbot server.
 -   **URLSession:** For making network requests to the chatbot server.
+<img width="229" alt="Screenshot 2025-04-06 at 4 45 47 AM" src="https://github.com/user-attachments/assets/016ea1d2-a4ec-4968-b609-a945db58d9f1" />
 
 ## Requirements
 
