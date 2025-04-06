@@ -1,114 +1,162 @@
 import SwiftUI
 
 struct HomePageView: View {
+
+    struct TypingTextView: View {
+        let text: String
+        let onNameClick: (String, String) -> Void
+
+        var body: some View {
+            Text(text)
+                .onTapGesture {
+                    onNameClick("ExampleName", "ExampleWebsite")
+                }
+        }
+    }
+
+    let user: User?
     @State private var message = ""
-    @State private var messages: [Message] = []
+    @State private var messages: [ChatMessage] = []
     @State private var errorMessage: String?
     @State private var contentHeight: CGFloat = 0
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack {
-                // header
-                HStack {
-                    Text("EquiBot")
-                        .font(.custom("Poppins-Regular", size: 45))
-                        .fontWeight(.bold)
-                        .padding()
-                }
-                Divider()
-                    .frame(height: 2) // Thicker divider
+        NavigationView {
+            GeometryReader { geometry in
+                VStack {
+                    // Header
+                    HStack {
+                        NavigationLink(destination: TabsView(user: user, messages: messages)) {
+                            Image("align")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, 30)
 
-                // messages
-                ScrollViewReader { scrollViewProxy in
-                    ScrollView {
-                        VStack(alignment: .leading) {
-                            ForEach(messages) { msg in
-                                HStack {
-                                    if msg.isUser {
-                                        Spacer()
-                                        TypingTextView(text: msg.content)
-                                            .font(.custom("Poppins-Regular", size: 16)) // Slightly bigger font for user message
-                                            .padding(8)
-                                            .background(Color.gray.opacity(0.2))
-                                            .foregroundColor(.black)
-                                            .cornerRadius(10)
-                                            .padding(.vertical, 2)
-                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.7, alignment: .trailing)
-                                    } else {
-                                        TypingTextView(text: msg.content)
-                                            .font(.custom("Poppins-Regular", size: 14)) // Slightly smaller font for chatbot message
-                                            .padding()
-                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: .leading) // 85% width
-                                        Spacer()
+                        Spacer()
+
+                        Image("Logo")
+                            .resizable()
+                            .frame(width: 100, height: 100)
+                            .padding(.leading, -48)
+
+                        Spacer()
+
+                        NavigationLink(destination: ProfilePageView(user: user)) {
+                            Image("userProfile")
+                                .resizable()
+                                .frame(width: 35, height: 40)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, -70)
+                    }
+
+                   
+
+                    // Messages
+                    ScrollViewReader { scrollViewProxy in
+                        ScrollView {
+                            VStack(alignment: .leading) {
+                                ForEach(messages) { msg in
+                                    messageView(for: msg)
+                                }
+                            }
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.onAppear {
+                                        contentHeight = geo.size.height
                                     }
                                 }
-                                .id(msg.id)
-                            }
-                        }
-                        .background(GeometryReader { geo -> Color in
-                            DispatchQueue.main.async {
-                                contentHeight = geo.size.height
-                            }
-                            return Color.clear
-                        })
-                        .padding()
-                        .onChange(of: contentHeight) { _ in
-                            if let lastMessage = messages.last {
-                                scrollViewProxy.scrollTo(lastMessage.id, anchor: .bottom)
-                            }
-                        }
-                    }
-                    .frame(height: geometry.size.height * 0.75) // Adjust height to ensure input section is visible
-                }
-
-                // text input and send button
-                HStack {
-                    TextField("Enter your message", text: $message)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding()
-
-                    Button(action: sendMessage) {
-                        Text("Send")
-                            .font(.custom("Poppins-Regular", size: 16))
+                            )
                             .padding()
-                            .background(Color.gray.opacity(0.2))
-                            .foregroundColor(.black)
-                            .cornerRadius(10)
+                            .onChange(of: messages) { _, newMessages in
+                                if let lastMessage = newMessages.last {
+                                    scrollViewProxy.scrollTo(lastMessage.id, anchor: .bottom)
+                                }
+                            }
+                        }
+                        .frame(height: geometry.size.height * 0.75)
                     }
-                    .padding()
-                }
 
-                // error message
-                if let errorMessage = errorMessage {
-                    Text("Error: \(errorMessage)")
-                        .font(.custom("Poppins-Regular", size: 14))
-                        .foregroundColor(.red)
+                    // Text Input + Send Button
+                    HStack {
+                        TextField("Enter your message", text: $message)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding()
+
+                        Button(action: sendMessage) {
+                            Text("Send")
+                                .font(.custom("Poppins-Regular", size: 16))
+                                .padding()
+                                .frame(width: 80, height: 40)
+                                .background(Color(red: 28/255.0, green: 42/255.0, blue: 77/255.0))
+                                .foregroundColor(.white)
+                                .cornerRadius(20)
+                        }
                         .padding()
+                    }
+
+                    // Error Message
+                    if let errorMessage = errorMessage {
+                        Text("Error: \(errorMessage)")
+                            .font(.custom("Poppins-Regular", size: 14))
+                            .foregroundColor(.red)
+                            .padding()
+                    }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    func messageView(for msg: ChatMessage) -> some View {
+        if msg.isUser {
+            HStack {
+                Spacer()
+                AnimatedTypingTextView(text: msg.content, onNameClick: saveNameAndWebsite)
+                    .font(.custom("Poppins-Regular", size: 16))
+                    .padding(8)
+                    .background(Color.gray.opacity(0.2))
+                    .foregroundColor(.black)
+                    .cornerRadius(10)
+                    .padding(.vertical, 2)
+                    .frame(maxWidth: UIScreen.main.bounds.width * 0.7, alignment: .trailing)
+            }
+            .id(msg.id)
+        } else {
+            HStack {
+                AnimatedTypingTextView(text: msg.content, onNameClick: saveNameAndWebsite)
+                    .font(.custom("Poppins-SemiBold", size: 14))
+                    .padding()
+                    .frame(maxWidth: UIScreen.main.bounds.width * 0.85, alignment: .leading)
+                Spacer()
+            }
+            .id(msg.id)
         }
     }
 
     func sendMessage() {
         guard !message.isEmpty else { return }
-        messages.append(Message(content: message, isUser: true))
+        messages.append(ChatMessage(content: message, isUser: true))
         getChatbotResponse(for: message) { response in
             DispatchQueue.main.async {
-                messages.append(Message(content: response, isUser: false))
+                messages.append(ChatMessage(content: response, isUser: false))
             }
         }
         message = ""
     }
 
-    func getChatbotResponse(for message: String, completion: @escaping (String) -> Void) {
+    // MARK: - Get Chatbot Response
+
+    func getChatbotResponse(for userMessage: String, completion: @escaping (String) -> Void) {
         guard let url = URL(string: "http://127.0.0.1:5000/chatbot") else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: Any] = ["message": message]
+        let body: [String: Any] = ["message": userMessage]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -150,16 +198,25 @@ struct HomePageView: View {
             }
         }.resume()
     }
+
+    // MARK: - Save Name + Website
+
+    func saveNameAndWebsite(name: String, website: String) {
+        guard let userId = user?.id else { return }
+        AuthController.shared.saveNameAndWebsite(userId: userId, name: name, website: website) { result in
+            switch result {
+            case .success:
+                print("Name and website saved successfully")
+            case .failure(let error):
+                print("Failed to save name and website: \(error.localizedDescription)")
+            }
+        }
+    }
 }
 
-struct Message: Identifiable, Equatable {
-    let id = UUID()
-    let content: String
-    let isUser: Bool
-}
-
-struct TypingTextView: View {
+struct AnimatedTypingTextView: View {
     let text: String
+    let onNameClick: (String, String) -> Void
     @State private var displayedText = ""
     @State private var timer: Timer?
 
@@ -173,6 +230,9 @@ struct TypingTextView: View {
             }
             .onDisappear {
                 timer?.invalidate()
+            }
+            .onTapGesture {
+                onNameClick("ExampleName", "ExampleWebsite")
             }
     }
 
@@ -192,5 +252,5 @@ struct TypingTextView: View {
 }
 
 #Preview {
-    HomePageView()
+    HomePageView(user: nil)
 }

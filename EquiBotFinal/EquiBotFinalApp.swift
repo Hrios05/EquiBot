@@ -22,9 +22,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct EquiBotFinalApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    var body: some Scene {
-        WindowGroup {
-            HomePageView()
+        @State private var isShowingContentView = true
+
+        var body: some Scene {
+            WindowGroup {
+                if isShowingContentView {
+                    ContentView()
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                isShowingContentView = false
+                            }
+                        }
+                } else {
+                    LoginView()
+                }
+            }
         }
-    }
 }
